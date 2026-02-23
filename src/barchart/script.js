@@ -10,7 +10,7 @@ const ctx = document.getElementById("bmiChart");
 const USER_HEIGHT_CM = 170; // <-- change once, used everywhere
 const USER_HEIGHT_M = USER_HEIGHT_CM / 100;
 
-let bmiHistory = JSON.parse(localStorage.getItem("bmiHistory")) || [];
+let bmiData = JSON.parse(localStorage.getItem("bmiData")) || [];
 
 function getBMIColor(bmi) {
   if (bmi < 18.5) return "#74c0fc"; // Underweight
@@ -22,12 +22,12 @@ function getBMIColor(bmi) {
 const bmiChart = new Chart(ctx, {
   type: "bar",
   data: {
-    labels: bmiHistory.map((e) => e.date),
+    labels: bmiData.map((e) => e.timestamp),
     datasets: [
       {
         label: "BMI",
-        data: bmiHistory.map((e) => e.bmi),
-        backgroundColor: bmiHistory.map((e) => getBMIColor(e.bmi)),
+        data: bmiData.map((e) => e.bmi),
+        backgroundColor: bmiData.map((e) => getBMIColor(e.bmi)),
         borderRadius: 6,
       },
     ],
@@ -71,9 +71,9 @@ function addBMI() {
     bmi,
   };
 
-  bmiHistory.push(entry);
+  bmiData.push(entry);
 
-  localStorage.setItem("bmiHistory", JSON.stringify(bmiHistory));
+  localStorage.setItem("bmiData", JSON.stringify(bmiData));
 
   bmiChart.data.labels.push(entry.date);
   bmiChart.data.datasets[0].data.push(entry.bmi);
