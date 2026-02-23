@@ -31,6 +31,25 @@ function isRootAbsolute(url) {
   return url.startsWith("/");
 }
 
+function isSpecialUrl(url) {
+  return (
+    url.startsWith("#") ||
+    url.startsWith("mailto:") ||
+    url.startsWith("tel:") ||
+    url.startsWith("javascript:")
+  );
+}
+
+function toResolvedPath(url, baseDir) {
+  // baseDir ist z. B. "./dashboard/"
+  // Dokument liegt bei /src/app.html -> daraus wird /src/dashboard/...
+  const base = new URL(baseDir, window.location.href);
+  const resolved = new URL(url, base);
+
+  // Nur path + query + hash zurückgeben (kein kompletter Origin nötig)
+  return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+}
+
 function rewriteRelativeAssets(containerEl, baseDir) {
   const nodes = containerEl.querySelectorAll(
     "link[href], script[src], img[src], source[src], iframe[src]",
@@ -39,20 +58,18 @@ function rewriteRelativeAssets(containerEl, baseDir) {
   nodes.forEach((el) => {
     const attr = el.hasAttribute("href") ? "href" : "src";
     const val = (el.getAttribute(attr) || "").trim();
+
     if (!val) {
       return;
     }
 
-    if (isAbsoluteUrl(val) || isRootAbsolute(val)) {
+    // Absolute / Root / Sonderfälle nicht anfassen
+    if (isAbsoluteUrl(val) || isRootAbsolute(val) || isSpecialUrl(val)) {
       return;
     }
 
-    // ONLY rewrite "./..."
-    if (!val.startsWith("./")) {
-      return;
-    }
-
-    const newVal = baseDir + val.replace(/^\.\//, "");
+    // ALLE relativen Pfade auflösen (nicht nur "./...")
+    const newVal = toResolvedPath(val, baseDir);
     el.setAttribute(attr, newVal);
   });
 }
@@ -65,9 +82,11 @@ function runInlineScripts(containerEl) {
 
   scripts.forEach((oldScript) => {
     const newScript = document.createElement("script");
+
     if (oldScript.type) {
       newScript.type = oldScript.type;
     }
+
     newScript.textContent = oldScript.textContent || "";
     oldScript.replaceWith(newScript);
   });
@@ -78,11 +97,12 @@ function runExternalScripts(containerEl) {
 
   const loaders = scripts.map((oldScript) => {
     const src = (oldScript.getAttribute("src") || "").trim();
+
     if (!src) {
       return Promise.resolve();
     }
 
-    // schon geladen -> sofort "fertig"
+    // Schon geladen -> nicht nochmal laden
     if (loadedScripts.has(src)) {
       return Promise.resolve();
     }
@@ -135,19 +155,17 @@ async function loadRoute(routeName) {
   console.log("View injected into #view");
 
   const baseDir = getBaseDir(file);
+
+  // WICHTIG: relative Pfade im geladenen Partial korrigieren
   rewriteRelativeAssets(host, baseDir);
 
-  // execute scripts (inline + external) for injected views
+  // Scripts aus dynamisch geladenem HTML ausführen
   runInlineScripts(host);
   await runExternalScripts(host);
 
   if (routeName === "tables") {
     window.tablesInit?.();
   }
-
-  document.querySelectorAll("#sidebarNav .nav-link").forEach((a) => {
-    a.classList.toggle("active", a.dataset.page === routeName);
-  });
 
   // Sidebar active state
   document.querySelectorAll("#sidebarNav .nav-link").forEach((a) => {
@@ -166,6 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("sidebarNav")?.addEventListener("click", (e) => {
     const link = e.target.closest("a[data-page]");
+
     if (!link) {
       return;
     }
