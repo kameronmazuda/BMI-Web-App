@@ -1,83 +1,176 @@
-// "Router-Tabelle": Welche Hash-Route (#dashboard/#forms/#tables) lädt welche HTML-Datei?
+// src/dashboard/dashboard.js
+
+// Hash route -> view file
 const routes = {
-  // Wenn die URL ...#dashboard ist, laden wir diese Datei in den Content-Bereich
   dashboard: "./dashboard/dashboard.html",
-
-  // Wenn die URL ...#forms ist, laden wir diese Datei in den Content-Bereich
-  forms: "./forms/forms.html",
-
-  // Wenn die URL ...#tables ist, laden wir diese Datei in den Content-Bereich
+  formular: "./formular/formular.html",
   tables: "./tables/tables.html",
 };
 
-/**
- * Liest die Route aus dem URL-Hash (location.hash).
- * - Kein Hash vorhanden? -> Standard: "dashboard"
- * - Unbekannter Hash?    -> Fallback: "dashboard"
- */
-function getRouteFromHash() {
-  // location.hash enthält z.B. "#forms", "#dashboard" oder "" (leer)
-  // Wenn leer, nehmen wir "#dashboard" als Standard.
-  // Danach entfernen wir das "#" und trimmen Whitespace.
-  const raw = (location.hash || "#dashboard").replace("#", "").trim();
+const loadedScripts = new Set();
 
-  // Sicherheits-/Fallback-Logik:
-  // Nur wenn raw als Key in routes existiert, verwenden wir ihn,
-  // sonst gehen wir zurück auf "dashboard".
+function getRouteFromHash() {
+  const raw = (location.hash || "#dashboard").replace("#", "").trim();
   return routes[raw] ? raw : "dashboard";
 }
 
-/**
- * Lädt die HTML-Datei für die angegebene Route und rendert sie
- *
- * @param {string} routeName
- */
-async function loadRoute(routeName) {
-  // Container, in den wir die geladene HTML-Seite einfügen
-  const host = document.getElementById("view");
+function getBaseDir(filePath) {
+  const i = filePath.lastIndexOf("/");
+  return i >= 0 ? filePath.slice(0, i + 1) : "./";
+}
 
-  // Datei-Pfad anhand der Route bestimmen
+function isAbsoluteUrl(url) {
+  return (
+    /^(https?:)?\/\//i.test(url) ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  );
+}
+
+function isRootAbsolute(url) {
+  return url.startsWith("/");
+}
+
+function rewriteRelativeAssets(containerEl, baseDir) {
+  const nodes = containerEl.querySelectorAll(
+    "link[href], script[src], img[src], source[src], iframe[src]",
+  );
+
+  nodes.forEach((el) => {
+    const attr = el.hasAttribute("href") ? "href" : "src";
+    const val = (el.getAttribute(attr) || "").trim();
+    if (!val) {
+      return;
+    }
+
+    if (isAbsoluteUrl(val) || isRootAbsolute(val)) {
+      return;
+    }
+
+    // ONLY rewrite "./..."
+    if (!val.startsWith("./")) {
+      return;
+    }
+
+    const newVal = baseDir + val.replace(/^\.\//, "");
+    el.setAttribute(attr, newVal);
+  });
+}
+
+function runInlineScripts(containerEl) {
+  // Inline <script> inside innerHTML is NOT executed automatically.
+  const scripts = Array.from(containerEl.querySelectorAll("script")).filter(
+    (s) => !s.src,
+  );
+
+  scripts.forEach((oldScript) => {
+    const newScript = document.createElement("script");
+    if (oldScript.type) {
+      newScript.type = oldScript.type;
+    }
+    newScript.textContent = oldScript.textContent || "";
+    oldScript.replaceWith(newScript);
+  });
+}
+
+function runExternalScripts(containerEl) {
+  const scripts = Array.from(containerEl.querySelectorAll("script[src]"));
+
+  const loaders = scripts.map((oldScript) => {
+    const src = (oldScript.getAttribute("src") || "").trim();
+    if (!src) {
+      return Promise.resolve();
+    }
+
+    // schon geladen -> sofort "fertig"
+    if (loadedScripts.has(src)) {
+      return Promise.resolve();
+    }
+
+    loadedScripts.add(src);
+
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.defer = true;
+
+      if (oldScript.type) {
+        s.type = oldScript.type;
+      }
+
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+
+      document.body.appendChild(s);
+    });
+  });
+
+  return Promise.all(loaders);
+}
+
+async function loadRoute(routeName) {
+  console.log("Loading route:", routeName);
+
+  const host = document.getElementById("view");
   const file = routes[routeName];
 
-  // HTML-Datei über HTTP holen
-  const res = await fetch(file);
-
-  // Wenn fetch nicht ok ist (z.B. 404), zeigen wir eine Fehlermeldung
-  if (!res.ok) {
-    host.innerHTML = `<div class="alert alert-danger mb-0">
-      Konnte <b>${file}</b> nicht laden (HTTP ${res.status})
-    </div>`;
+  if (!host) {
+    console.error('Container with id="view" not found.');
     return;
   }
 
-  // HTML-Text aus der Response lesen...
-  host.innerHTML = await res.text();
+  console.log("Fetching view file:", file);
 
-  // Sidebar-Highlight aktualisieren:
+  const res = await fetch(file, { cache: "no-store" });
+
+  if (!res.ok) {
+    host.innerHTML = `<div class="alert alert-danger mb-0">
+      Could not load <b>${file}</b> (HTTP ${res.status})
+    </div>`;
+    console.error("Fetch failed:", res.status, res.statusText);
+    return;
+  }
+
+  host.innerHTML = await res.text();
+  console.log("View injected into #view");
+
+  const baseDir = getBaseDir(file);
+  rewriteRelativeAssets(host, baseDir);
+
+  // execute scripts (inline + external) for injected views
+  runInlineScripts(host);
+  await runExternalScripts(host);
+
+  if (routeName === "tables") {
+    window.tablesInit?.();
+  }
+
+  document.querySelectorAll("#sidebarNav .nav-link").forEach((a) => {
+    a.classList.toggle("active", a.dataset.page === routeName);
+  });
+
+  // Sidebar active state
   document.querySelectorAll("#sidebarNav .nav-link").forEach((a) => {
     a.classList.toggle("active", a.dataset.page === routeName);
   });
 }
 
-// Sobald das DOM bereit ist, initialisieren wir das Routing/Navigation
 document.addEventListener("DOMContentLoaded", () => {
-  // Initiale Route laden (aus Hash oder default dashboard)
+  console.log("dashboard.js loaded");
+
   loadRoute(getRouteFromHash());
 
-  // Wenn sich der Hash ändert (z.B. Back/Forward oder manuell #forms tippen),
-  // dann laden wir die entsprechende Route neu
   window.addEventListener("hashchange", () => {
     loadRoute(getRouteFromHash());
   });
 
-  // Click-Listener auf die Sidebar-Navigation:
-  // Wir fangen Klicks ab und setzen nur den Hash
   document.getElementById("sidebarNav")?.addEventListener("click", (e) => {
     const link = e.target.closest("a[data-page]");
-    if (!link) return;
+    if (!link) {
+      return;
+    }
+
     e.preventDefault();
-    // Hash auf die gewünschte Route setzen (z.B. "#forms")
-    // -> löst "hashchange" aus -> oben wird loadRoute(...) aufgerufen
     location.hash = link.dataset.page;
   });
 });

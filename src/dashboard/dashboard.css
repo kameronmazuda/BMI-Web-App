@@ -14,6 +14,12 @@ body {
   border: 2px solid #333;
 }
 
+.box-chart {
+  background: #fff;
+  border: 2px solid #333;
+  height: 600px;
+}
+
 .page-title {
   padding: 10px 14px;
   text-align: center;
@@ -75,4 +81,34 @@ body {
 
 .ph-bars {
   height: 936px;
+}
+
+/* Embedded pages (iframes) */
+.embed-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.embed-box {
+  border: 2px solid #999;
+  background: #f9f9f9;
+  height: 320px; /* Controls visible height of embedded page */
+}
+
+.embed-frame {
+  width: 100%;
+  height: 100%;
+  border: 0; /* No iframe border */
+  display: block;
+}
+
+.dash-frame {
+  height: 540px;
+  width: 100%;
+}
+
+.table-frame {
+  height: 520px;
+  width: 100%;
 }

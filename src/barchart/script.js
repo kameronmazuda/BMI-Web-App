@@ -14,26 +14,28 @@ let bmiHistory = JSON.parse(localStorage.getItem("bmiHistory")) || [];
 
 function getBMIColor(bmi) {
   if (bmi < 18.5) return "#74c0fc"; // Underweight
-  if (bmi < 25) return "#51cf66";   // Normal
-  if (bmi < 30) return "#ffa94d";   // Overweight
-  return "#ff6b6b";                 // Obese
+  if (bmi < 25) return "#51cf66"; // Normal
+  if (bmi < 30) return "#ffa94d"; // Overweight
+  return "#ff6b6b"; // Obese
 }
 
 const bmiChart = new Chart(ctx, {
   type: "bar",
   data: {
-    labels: bmiHistory.map(e => e.date),
-    datasets: [{
-      label: "BMI",
-      data: bmiHistory.map(e => e.bmi),
-      backgroundColor: bmiHistory.map(e => getBMIColor(e.bmi)),
-      borderRadius: 6
-    }]
+    labels: bmiHistory.map((e) => e.date),
+    datasets: [
+      {
+        label: "BMI",
+        data: bmiHistory.map((e) => e.bmi),
+        backgroundColor: bmiHistory.map((e) => getBMIColor(e.bmi)),
+        borderRadius: 6,
+      },
+    ],
   },
   options: {
     responsive: true,
     plugins: {
-      legend: { display: false }
+      legend: { display: false },
     },
     scales: {
       y: {
@@ -41,17 +43,17 @@ const bmiChart = new Chart(ctx, {
         max: 40,
         title: {
           display: true,
-          text: "BMI"
-        }
+          text: "BMI",
+        },
       },
       x: {
         title: {
           display: true,
-          text: "Date"
-        }
-      }
-    }
-  }
+          text: "Date",
+        },
+      },
+    },
+  },
 });
 
 function addBMI() {
@@ -66,7 +68,7 @@ function addBMI() {
 
   const entry = {
     date: new Date().toLocaleDateString(),
-    bmi
+    bmi,
   };
 
   bmiHistory.push(entry);
@@ -80,4 +82,3 @@ function addBMI() {
 
   document.getElementById("weight").value = "";
 }
-

@@ -8,7 +8,7 @@
 
 ### Directory structure
 
-- Put all CSS(Cascading Style Sheet) into the `src/css` Folder the naming should be `css/feature_name.css` 
+- Put all CSS(Cascading Style Sheet) into the `src/css` Folder the naming should be `css/feature_name.css`
 - Put all Javascript files into the `src/js` Folder the naming should be `js/feature_name.js`
 - All HTML Files are put directly into the `src` Folder named as `src/feature_name.html`
 
