@@ -14,6 +14,11 @@
 
 - [ ] Dashboard unifies all elements and can show them to the user
 
+## 23.02 Alpha.3
+
+- [ ] Data will be stored into the local storage
+- [ ] Data for the Text, Graph and Table Visualization will be loaded from local storage
+
 ## 23.02 Beta.1
 
 - [ ] Application is in a useable state

@@ -1,95 +1,216 @@
-let bmiList = [];
+// src/tables/tables.js
+(() => {
+  if (window.__tablesLoaded) return;
+  window.__tablesLoaded = true;
 
-const filterSelect = document.getElementById('filterSelect');
-const sortSelect = document.getElementById('sortSelect');
-const tableBody = document.getElementById('bmiTableBody');
+  /* =========================================================
+     Constants
+  ========================================================= */
 
-// JSON laden
-fetch('../data/mock.json')
-  .then(res => res.json())
-  .then(data => {
-    bmiList = data.tables.bmiEntries;
-    buildTable();
-  })
-  .catch(err => console.error('Fehler beim Laden der JSON:', err));
+  const STORAGE_KEY = "bmiData";
+  const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
-// Events
-filterSelect.addEventListener('change', buildTable);
-sortSelect.addEventListener('change', buildTable);
+  /* =========================================================
+     State
+  ========================================================= */
 
-// BMI Berechung
-// Weight number
-// height number
-function calculateBMI(weight, height) {
-  const h = height / 100;
-  return (weight / (h * h)).toFixed(1);
-}
+  let bmiEntries = [];
 
-// BMI bewerten
-function bmiRating(bmi) {
-  if (bmi < 18.5) return 'Untergewicht';
-  if (bmi < 25) return 'Normalgewicht';
-  if (bmi < 30) return 'Übergewicht';
-  return 'Adipositas';
-}
+  /* =========================================================
+     Pure Utilities
+  ========================================================= */
 
-// Tabelle neu aufbauen
-function buildTable() {
-  let list = [...bmiList];
-  const now = new Date();
+  function calculateBMI(weight, heightCm) {
+    const w = Number(weight);
+    const h = Number(heightCm);
 
-  // Filtern
-  if (filterSelect.value !== 'all') {
-    list = list.filter(entry => {
-      const entryDate = new Date(entry.date);
-      const diffDays = (now - entryDate) / (1000 * 60 * 60 * 24);
-      if (filterSelect.value === 'week') return diffDays <= 7;
-      if (filterSelect.value === 'month') return diffDays <= 30;
-    });
+    if (!Number.isFinite(w) || !Number.isFinite(h) || h <= 0) {
+      return null;
+    }
+
+    const heightM = h / 100;
+    return Number((w / (heightM * heightM)).toFixed(1));
   }
 
-  // Sortieren
-  switch (sortSelect.value) {
-    case 'date-asc':
-      list.sort((a, b) => new Date(a.date) - new Date(b.date));
-      break;
-    case 'date-desc':
-      list.sort((a, b) => new Date(b.date) - new Date(a.date));
-      break;
-    case 'bmi-asc':
-      list.sort((a, b) =>
-        calculateBMI(a.weight, a.height) - calculateBMI(b.weight, b.height)
-      );
-      break;
-    case 'bmi-desc':
-      list.sort((a, b) =>
-        calculateBMI(b.weight, b.height) - calculateBMI(a.weight, a.height)
-      );
-      break;
+  function getBMICategory(bmi) {
+    if (!Number.isFinite(bmi)) return "—";
+    if (bmi < 18.5) return "Untergewicht";
+    if (bmi < 25) return "Normalgewicht";
+    if (bmi < 30) return "Übergewicht";
+    return "Adipositas";
   }
 
-  // Tabelle leeren
-  tableBody.innerHTML = '';
+  function isWithinDays(dateString, days) {
+    const entryDate = new Date(dateString);
+    if (Number.isNaN(entryDate.getTime())) return false;
 
-  // Zeilen erzeugen
-  list.forEach((entry, index) => {
+    const diff = Date.now() - entryDate.getTime();
+    return diff <= days * DAY_IN_MS;
+  }
+
+  /* =========================================================
+     Storage
+  ========================================================= */
+
+  function loadFromStorage() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  }
+
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bmiEntries));
+  }
+
+  function removeEntryByTimestamp(timestamp) {
+    bmiEntries = bmiEntries.filter((e) => e.timestamp !== timestamp);
+    saveToStorage();
+  }
+
+  /* =========================================================
+     Filtering & Sorting
+  ========================================================= */
+
+  function filterEntries(entries, filterValue) {
+    if (filterValue === "week") {
+      return entries.filter((e) => isWithinDays(e.date, 7));
+    }
+
+    if (filterValue === "month") {
+      return entries.filter((e) => isWithinDays(e.date, 30));
+    }
+
+    return entries;
+  }
+
+  function sortEntries(entries, sortValue) {
+    const list = [...entries];
+
+    switch (sortValue) {
+      case "date-asc":
+        return list.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      case "date-desc":
+        return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      case "bmi-asc":
+        return list.sort(
+          (a, b) =>
+            (calculateBMI(a.weight, a.height) ?? Infinity) -
+            (calculateBMI(b.weight, b.height) ?? Infinity),
+        );
+
+      case "bmi-desc":
+        return list.sort(
+          (a, b) =>
+            (calculateBMI(b.weight, b.height) ?? -Infinity) -
+            (calculateBMI(a.weight, a.height) ?? -Infinity),
+        );
+
+      default:
+        return list;
+    }
+  }
+
+  /* =========================================================
+     Rendering
+  ========================================================= */
+
+  function createRow(entry) {
     const bmi = calculateBMI(entry.weight, entry.height);
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${entry.date}</td>
-      <td>${entry.weight}</td>
-      <td>${entry.height}</td>
-      <td>${bmi}</td>
-      <td>${bmiRating(bmi)}</td>
-      <td><button onclick="deleteEntry(${index})">Löschen</button></td>
-    `;
-    tableBody.appendChild(tr);
-  });
-}
+    const tr = document.createElement("tr");
 
-// Löschen
-function deleteEntry(index) {
-  bmiList.splice(index, 1);
-  buildTable();
-}
+    tr.innerHTML = `
+      <td>${entry.date ?? "—"}</td>
+      <td>${entry.weight ?? "—"}</td>
+      <td>${entry.height ?? "—"}</td>
+      <td>${bmi ?? "—"}</td>
+      <td>${getBMICategory(bmi)}</td>
+      <td>
+        <button 
+          class="btn btn-sm btn-danger" 
+          data-timestamp="${entry.timestamp}">
+          Löschen
+        </button>
+      </td>
+    `;
+
+    return tr;
+  }
+
+  function renderTable(entries, tableBody) {
+    tableBody.innerHTML = "";
+    entries.forEach((entry) =>
+      tableBody.appendChild(createRow(entry)),
+    );
+  }
+
+  /* =========================================================
+     Controller
+  ========================================================= */
+
+  function rebuildTable(filterSelect, sortSelect, tableBody) {
+    const filtered = filterEntries(bmiEntries, filterSelect.value);
+    const sorted = sortEntries(filtered, sortSelect.value);
+    renderTable(sorted, tableBody);
+  }
+
+  function bindControls(filterSelect, sortSelect, tableBody) {
+    if (!filterSelect.dataset.bound) {
+      filterSelect.addEventListener("change", () =>
+        rebuildTable(filterSelect, sortSelect, tableBody),
+      );
+      filterSelect.dataset.bound = "1";
+    }
+
+    if (!sortSelect.dataset.bound) {
+      sortSelect.addEventListener("change", () =>
+        rebuildTable(filterSelect, sortSelect, tableBody),
+      );
+      sortSelect.dataset.bound = "1";
+    }
+
+    // Event delegation for delete buttons
+    if (!tableBody.dataset.bound) {
+      tableBody.addEventListener("click", (event) => {
+        const btn = event.target.closest("button[data-timestamp]");
+        if (!btn) return;
+
+        removeEntryByTimestamp(btn.dataset.timestamp);
+        rebuildTable(filterSelect, sortSelect, tableBody);
+      });
+
+      tableBody.dataset.bound = "1";
+    }
+  }
+
+  /* =========================================================
+     Initialization
+  ========================================================= */
+
+  function tablesInit() {
+    const filterSelect = document.getElementById("filterSelect");
+    const sortSelect = document.getElementById("sortSelect");
+    const tableBody = document.getElementById("bmiTableBody");
+
+    if (!filterSelect || !sortSelect || !tableBody) {
+      return; // View not loaded yet
+    }
+
+    bmiEntries = loadFromStorage();
+
+    bindControls(filterSelect, sortSelect, tableBody);
+    rebuildTable(filterSelect, sortSelect, tableBody);
+  }
+
+  window.tablesInit = tablesInit;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tablesInit);
+  } else {
+    tablesInit();
+  }
+})();

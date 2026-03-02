@@ -1,83 +1,219 @@
-// "Router-Tabelle": Welche Hash-Route (#dashboard/#forms/#tables) lädt welche HTML-Datei?
-const routes = {
-  // Wenn die URL ...#dashboard ist, laden wir diese Datei in den Content-Bereich
+// src/dashboard/dashboard.js
+
+const ROUTES = {
   dashboard: "./dashboard/dashboard.html",
-
-  // Wenn die URL ...#forms ist, laden wir diese Datei in den Content-Bereich
-  forms: "./forms/forms.html",
-
-  // Wenn die URL ...#tables ist, laden wir diese Datei in den Content-Bereich
+  formular: "./formular/formular.html",
   tables: "./tables/tables.html",
 };
 
-/**
- * Liest die Route aus dem URL-Hash (location.hash).
- * - Kein Hash vorhanden? -> Standard: "dashboard"
- * - Unbekannter Hash?    -> Fallback: "dashboard"
- */
-function getRouteFromHash() {
-  // location.hash enthält z.B. "#forms", "#dashboard" oder "" (leer)
-  // Wenn leer, nehmen wir "#dashboard" als Standard.
-  // Danach entfernen wir das "#" und trimmen Whitespace.
-  const raw = (location.hash || "#dashboard").replace("#", "").trim();
+const DEFAULT_ROUTE = "dashboard";
+const VIEW_ID = "view";
+const SIDEBAR_ID = "sidebarNav";
 
-  // Sicherheits-/Fallback-Logik:
-  // Nur wenn raw als Key in routes existiert, verwenden wir ihn,
-  // sonst gehen wir zurück auf "dashboard".
-  return routes[raw] ? raw : "dashboard";
+const loadedScripts = new Set();
+
+/* =========================================================
+   Routing
+========================================================= */
+
+function getCurrentRoute() {
+  const hash = location.hash.replace("#", "").trim();
+  return ROUTES[hash] ? hash : DEFAULT_ROUTE;
 }
 
-/**
- * Lädt die HTML-Datei für die angegebene Route und rendert sie
- *
- * @param {string} routeName
- */
-async function loadRoute(routeName) {
-  // Container, in den wir die geladene HTML-Seite einfügen
-  const host = document.getElementById("view");
+function getRouteFile(route) {
+  return ROUTES[route];
+}
 
-  // Datei-Pfad anhand der Route bestimmen
-  const file = routes[routeName];
+/* =========================================================
+   Path Utilities
+========================================================= */
 
-  // HTML-Datei über HTTP holen
-  const res = await fetch(file);
+function getBaseDirectory(path) {
+  const index = path.lastIndexOf("/");
+  return index >= 0 ? path.slice(0, index + 1) : "./";
+}
 
-  // Wenn fetch nicht ok ist (z.B. 404), zeigen wir eine Fehlermeldung
-  if (!res.ok) {
-    host.innerHTML = `<div class="alert alert-danger mb-0">
-      Konnte <b>${file}</b> nicht laden (HTTP ${res.status})
-    </div>`;
-    return;
+function isExternalUrl(url) {
+  return /^(https?:)?\/\//i.test(url);
+}
+
+function isRootPath(url) {
+  return url.startsWith("/");
+}
+
+function isSpecialProtocol(url) {
+  return ["#", "mailto:", "tel:", "javascript:"].some((prefix) =>
+    url.startsWith(prefix),
+  );
+}
+
+function shouldRewrite(url) {
+  if (!url) return false;
+  if (isExternalUrl(url)) return false;
+  if (isRootPath(url)) return false;
+  if (isSpecialProtocol(url)) return false;
+  if (url.startsWith("data:") || url.startsWith("blob:")) return false;
+  return true;
+}
+
+function resolvePath(url, baseDir) {
+  const base = new URL(baseDir, window.location.href);
+  const resolved = new URL(url, base);
+  return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+}
+
+/* =========================================================
+   Asset Handling
+========================================================= */
+
+function rewriteRelativeAssets(container, baseDir) {
+  const elements = container.querySelectorAll(
+    "link[href], script[src], img[src], source[src], iframe[src]"
+  );
+
+  elements.forEach((element) => {
+    const attribute = element.hasAttribute("href") ? "href" : "src";
+    const value = element.getAttribute(attribute)?.trim();
+
+    if (!shouldRewrite(value)) return;
+
+    element.setAttribute(attribute, resolvePath(value, baseDir));
+  });
+}
+
+/* =========================================================
+   Script Execution
+========================================================= */
+
+function executeInlineScripts(container) {
+  const scripts = [...container.querySelectorAll("script:not([src])")];
+
+  scripts.forEach((oldScript) => {
+    const newScript = document.createElement("script");
+    newScript.type = oldScript.type || "text/javascript";
+    newScript.textContent = oldScript.textContent || "";
+    oldScript.replaceWith(newScript);
+  });
+}
+
+function loadExternalScript(src, type) {
+  if (!src || loadedScripts.has(src)) {
+    return Promise.resolve();
   }
 
-  // HTML-Text aus der Response lesen...
-  host.innerHTML = await res.text();
+  loadedScripts.add(src);
 
-  // Sidebar-Highlight aktualisieren:
-  document.querySelectorAll("#sidebarNav .nav-link").forEach((a) => {
-    a.classList.toggle("active", a.dataset.page === routeName);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.defer = true;
+    if (type) script.type = type;
+
+    script.onload = resolve;
+    script.onerror = () =>
+      reject(new Error(`Failed to load script: ${src}`));
+
+    document.body.appendChild(script);
   });
 }
 
-// Sobald das DOM bereit ist, initialisieren wir das Routing/Navigation
-document.addEventListener("DOMContentLoaded", () => {
-  // Initiale Route laden (aus Hash oder default dashboard)
-  loadRoute(getRouteFromHash());
+function executeExternalScripts(container) {
+  const scripts = [...container.querySelectorAll("script[src]")];
 
-  // Wenn sich der Hash ändert (z.B. Back/Forward oder manuell #forms tippen),
-  // dann laden wir die entsprechende Route neu
+  return Promise.all(
+    scripts.map((script) =>
+      loadExternalScript(
+        script.getAttribute("src")?.trim(),
+        script.type
+      )
+    )
+  );
+}
+
+/* =========================================================
+   View Rendering
+========================================================= */
+
+async function fetchView(file) {
+  const response = await fetch(file, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load ${file} (HTTP ${response.status})`);
+  }
+
+  return response.text();
+}
+
+function renderError(container, message) {
+  container.innerHTML = `
+    <div class="alert alert-danger mb-0">
+      ${message}
+    </div>
+  `;
+}
+
+function updateSidebar(route) {
+  document
+    .querySelectorAll(`#${SIDEBAR_ID} .nav-link`)
+    .forEach((link) =>
+      link.classList.toggle("active", link.dataset.page === route)
+    );
+}
+
+/* =========================================================
+   Main Route Loader
+========================================================= */
+
+async function loadRoute(route) {
+  const container = document.getElementById(VIEW_ID);
+  if (!container) return;
+
+  const file = getRouteFile(route);
+
+  try {
+    const html = await fetchView(file);
+    container.innerHTML = html;
+
+    const baseDir = getBaseDirectory(file);
+
+    rewriteRelativeAssets(container, baseDir);
+    executeInlineScripts(container);
+    await executeExternalScripts(container);
+
+    if (route === "tables") {
+      window.tablesInit?.();
+    }
+
+    updateSidebar(route);
+  } catch (error) {
+    renderError(container, error.message);
+    console.error(error);
+  }
+}
+
+/* =========================================================
+   Initialization
+========================================================= */
+
+function initRouting() {
+  loadRoute(getCurrentRoute());
+
   window.addEventListener("hashchange", () => {
-    loadRoute(getRouteFromHash());
+    loadRoute(getCurrentRoute());
   });
 
-  // Click-Listener auf die Sidebar-Navigation:
-  // Wir fangen Klicks ab und setzen nur den Hash
-  document.getElementById("sidebarNav")?.addEventListener("click", (e) => {
-    const link = e.target.closest("a[data-page]");
-    if (!link) return;
-    e.preventDefault();
-    // Hash auf die gewünschte Route setzen (z.B. "#forms")
-    // -> löst "hashchange" aus -> oben wird loadRoute(...) aufgerufen
-    location.hash = link.dataset.page;
-  });
-});
+  document
+    .getElementById(SIDEBAR_ID)
+    ?.addEventListener("click", handleSidebarClick);
+}
+
+function handleSidebarClick(event) {
+  const link = event.target.closest("a[data-page]");
+  if (!link) return;
+
+  event.preventDefault();
+  location.hash = link.dataset.page;
+}
+
+document.addEventListener("DOMContentLoaded", initRouting);
