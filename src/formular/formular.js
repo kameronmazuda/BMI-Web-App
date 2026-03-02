@@ -71,7 +71,7 @@ function displayResult(bmi, category) {
 }
 
 function saveToLocalStorage(age, date, weight, height, bmi, category) {
-  const data = {
+  const newdata = {
     age,
     date,
     weight,
@@ -81,8 +81,11 @@ function saveToLocalStorage(age, date, weight, height, bmi, category) {
     timestamp: new Date().toISOString(),
   };
 
-  localStorage.setItem("bmiData", JSON.stringify(data));
+  let bmiHistory = JSON.parse(localStorage.getItem("bmiData") || "[]");
+  bmiHistory.push(newdata);
+  localStorage.setItem("bmiData", JSON.stringify(bmiHistory));
 }
+
 
 function loadFromLocalStorage() {
   const savedData = localStorage.getItem("bmiData");
@@ -90,7 +93,9 @@ function loadFromLocalStorage() {
     return;
   }
 
-  const data = JSON.parse(savedData);
+  const dataArray = JSON.parse(savedData);
+  const data = dataArray[dataArray.length - 1];
+  if (!data) return;
 
   const ageEl = document.getElementById("age");
   const dateEl = document.getElementById("date");
