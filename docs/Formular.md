@@ -48,7 +48,7 @@ Daten werden nach der Berechnung als JSON-String gespeichert:
     "height": "180",
     "bmi": 23.1,
     "category": "Normalgewicht",
-    "timestamp": "2025-02-23T14:30:45.123Z"
+    "timestamp": "2025-02-23T14:30:45.123Z" // new Date().toISOString()
 }
 ```
 
