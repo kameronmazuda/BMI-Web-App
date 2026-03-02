@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <title>Einstellungen</title>
+        <link rel="stylesheet" href="../css/settings.css">
+        <script src="../js/setting.js" defer></script>
+    </head>
+    <body>
+        <button onclick="toggleDialog()">Einstellungen</button>
+        <dialog id="settingsDialog">
+            <h1>Einstellungen</h1>
+
+            <label for="gender"><h5>Geschlecht:</h5></label>
+            <select name="gender" id="gender">
+                <option value="none">---</option>
+                <option value="male">Männlich</option>
+                <option value="female">Weiblich</option>
+            </select>
+            
+            <br><br>
+            <button onclick="toggleDialog()">Schließen</button>
+        </dialog>
+    </body>
+</html>

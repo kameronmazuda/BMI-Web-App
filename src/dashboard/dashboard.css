@@ -1,0 +1,78 @@
+/* Base */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #fdfdfd;
+}
+
+/* Layout helpers */
+.box {
+  background: #fff;
+  border: 2px solid #333;
+}
+
+.page-title {
+  padding: 10px 14px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.box-header {
+  border-bottom: 2px solid #333;
+  padding: 8px 12px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Sidebar */
+.sidebar {
+  background: #fff;
+  border: 2px solid #333;
+  min-height: calc(100vh - 2rem);
+}
+
+.sidebar-title {
+  border-bottom: 2px solid #333;
+  font-weight: 600;
+  text-align: center;
+  padding: 10px;
+}
+
+.sidebar .nav-link {
+  color: #000 !important;
+  text-decoration: none;
+  padding: 14px 16px;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+
+.sidebar .nav-link.active {
+  font-weight: 700;
+  background: #f2f2f2;
+}
+
+/* Placeholders */
+.ph {
+  background: #f1f1f1;
+  border: 2px solid #999;
+  display: grid;
+  place-items: center;
+  color: #333;
+  font-weight: 600;
+  user-select: none;
+}
+
+.ph-chart {
+  height: 110px;
+}
+
+.ph-table {
+  height: 896px;
+}
+
+.ph-bars {
+  height: 936px;
+}

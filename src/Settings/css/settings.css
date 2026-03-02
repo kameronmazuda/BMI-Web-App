@@ -1,0 +1,85 @@
+/* Dialog Styling */
+dialog {
+    border: none;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    max-width: 500px;
+    width: 90%;
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+dialog h1 {
+    margin-top: 0;
+    color: #333;
+}
+
+/* Button Styling */
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Button-Types */
+button[value="logout"] {
+    background-color: #f44336;
+}
+
+button[value="logout"]:hover {
+    background-color: #da190b;
+}
+
+button[value="changePassword"] {
+    background-color: #2196F3;
+}
+
+button[value="changePassword"]:hover {
+    background-color: #0b7dda;
+}
+
+/* Select Styling */
+select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 5px 0 15px 0;
+    width: 100%;
+    max-width: 300px;
+    font-size: 14px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+}
+
+label h5 {
+    margin: 5px 0;
+    color: #555;
+}
+
+/* Body Styling */
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: #f5f5f5;
+}

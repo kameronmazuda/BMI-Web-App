@@ -1,0 +1,24 @@
+{
+  "tables": {
+    "filters": {
+      "options": ["week", "month"]
+    },
+    "bmiEntries": [
+      {
+        "date": "2026-01-15",
+        "weight": 75,
+        "height": 180
+      },
+      {
+        "date": "2025-12-23",
+        "weight": 77,
+        "height": 180
+      },
+      {
+        "date": "2025-11-20",
+        "weight": 76,
+        "height": 180
+      }
+    ]
+  }
+}
