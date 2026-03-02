@@ -81,9 +81,9 @@ function saveToLocalStorage(age, date, weight, height, bmi, category) {
     timestamp: new Date().toISOString(),
   };
 
-  let bmiHistory = JSON.parse(localStorage.getItem("bmiData") || "[]");
-  bmiHistory.push(newdata);
-  localStorage.setItem("bmiData", JSON.stringify(bmiHistory));
+  let bmiData = JSON.parse(localStorage.getItem("bmiData") || "[]");
+  bmiData.push(newdata);
+  localStorage.setItem("bmiData", JSON.stringify(bmiData));
 }
 
 
