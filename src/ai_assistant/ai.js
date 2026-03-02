@@ -37,7 +37,7 @@ Der Text soll neutral und verständlich sein.
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "local-model",
+                model: "meta-llama-3-8b-instruct",
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0.3
             })

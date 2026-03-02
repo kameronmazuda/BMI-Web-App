@@ -9,12 +9,8 @@
   }
   window.__tablesLoaded = true;
 
+  const STORAGE_KEY = "bmiData";
   let bmiList = [];
-
-  function resolveUrl(relativeToThisScript) {
-    const base = document.currentScript?.src || window.location.href;
-    return new URL(relativeToThisScript, base).toString();
-  }
 
   function calculateBMI(weight, height) {
     const w = Number(weight);
@@ -33,6 +29,19 @@
     if (v < 25) return "Normalgewicht";
     if (v < 30) return "Übergewicht";
     return "Adipositas";
+  }
+
+  function loadFromStorage() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    try {
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bmiList));
   }
 
   function buildTable(filterSelect, sortSelect, tableBody) {
@@ -89,6 +98,7 @@
 
       tr.querySelector("button")?.addEventListener("click", () => {
         bmiList.splice(index, 1);
+        saveToStorage(); // neu speichern
         buildTable(filterSelect, sortSelect, tableBody);
       });
 
@@ -124,15 +134,11 @@
     // Prefer stable root path if you serve /src as web root:
     // fetch("/data/mock.json")
     // Otherwise keep script-relative:
-    const jsonUrl = resolveUrl("../data/mock.json");
+    // const jsonUrl = resolveUrl("../data/mock.json");
 
-    fetch(jsonUrl, { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        bmiList = data?.tables?.bmiEntries || [];
-        buildTable(filterSelect, sortSelect, tableBody);
-      })
-      .catch((err) => console.error("Fehler beim Laden der JSON:", err));
+    // Daten jetzt aus LocalStorage laden statt aus mock.json
+    bmiList = loadFromStorage();
+    buildTable(filterSelect, sortSelect, tableBody);
   }
 
   // Export global, so the router can call it after injecting the view
