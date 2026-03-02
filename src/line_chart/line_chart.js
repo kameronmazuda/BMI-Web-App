@@ -1,7 +1,3 @@
-//NOTE(Kay): This will only work when we are using a live server in cases where this is used without a server
-//           it will fail miserably. In these cases we should use a local variable which then can be used inside
-//           plotChart!
-
 /**
  *
  * @param {string} url path to file
@@ -28,12 +24,13 @@ function loadJson(url, cb) {
 /**
  *
  * @param {string} chartAnchorPoint A id to a canvas element to which the line diagram will be drawn
- * @param {object} data the bmi data to plot (x and y axis)
- * @returns a new Chart.js Plot which contains the plotted data
+ * @returns a new Chart.js plot which contains the plotted data
  */
 function plotChart(chartAnchorPoint) {
   const chartAnchor = document.getElementById(chartAnchorPoint);
+  const plotData = [];
   const rawPlotData = JSON.parse(localStorage.getItem("bmiData"));
+  plotData.push(rawPlotData);
   const configuration = {
     type: "line",
     data: {
@@ -49,12 +46,5 @@ function plotChart(chartAnchorPoint) {
 
   return new Chart(chartAnchor, configuration);
 }
-
-/*loadJson("data_mock.json", (err, jsonData) => {
-  if (err) {
-    console.error("Failed to load BMI data:", err);
-    return;
-  }
-});*/
 
 plotChart("bmi-chart");
