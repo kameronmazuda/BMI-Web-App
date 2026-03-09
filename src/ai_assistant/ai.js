@@ -9,7 +9,7 @@ async function generateAIText() {
 
     let settings = {
         gender: 'none'
-    }
+    };
 
     const savedSettings = localStorage.getItem('userSettings');
     if (savedSettings){
@@ -17,7 +17,6 @@ async function generateAIText() {
     }
 
     const { age, date, weight, height, bmi, category } = JSON.parse(savedData);
-
 
     const prompt = `
 Erstelle einen kurzen, sachlichen Fließtext auf Deutsch für eine Schul-Web-App.
@@ -32,7 +31,6 @@ BMI-Kategorie: ${category}
 
 Der Text soll neutral und verständlich sein.
 `;
-
 
     try {
         const response = await fetch("http://localhost:1234/v1/chat/completions", {
@@ -52,7 +50,16 @@ Der Text soll neutral und verständlich sein.
 
     } catch (error) {
         console.error(error);
-        alert("Fehler bei der Verbindung mit der KI.");
+        alert("Fehler bei der Verbindung mit der KI. Es wird ein Standardtext angezeigt.");
+
+        // Statischer Ersatztext
+        const fallbackText = `
+Am ${date} wurde ein BMI-Wert von ${bmi} für eine Person mit ${age} Jahren, 
+einer Größe von ${height} cm und einem Gewicht von ${weight} kg berechnet. 
+Der BMI liegt in der Kategorie "${category}". 
+Diese Einordnung dient als Orientierung und ersetzt keine medizinische Beratung.
+        `;
+
+        document.getElementById("aiText").innerText = fallbackText.trim();
     }
-    
 }
