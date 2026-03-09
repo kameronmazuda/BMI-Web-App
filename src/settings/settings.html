@@ -2,22 +2,34 @@
     <head>
         <title>Einstellungen</title>
         <link rel="stylesheet" href="./settings.css">
-        <script src="./settings.js" defer></script>
     </head>
     <body>
-        <button onclick="toggleDialog()">Einstellungen</button>
-        <dialog id="settingsDialog">
-            <h1>Einstellungen</h1>
+        <button onclick="toggleDialog()" aria-label="Einstellungen öffnen">Einstellungen</button>
+        <dialog id="settingsDialog" aria-labelledby="settingsTitle" aria-describedby="settingsDialogDesc settingsStatus">
+            <h1 id="settingsTitle">Einstellungen</h1>
+            <p id="settingsDialogDesc" class="sr-only">
+                In diesem Dialog kannst du dein Geschlecht und das Datumsformat auswählen. Änderungen werden automatisch gespeichert.
+            </p>
+            <p id="settingsStatus" class="sr-only" role="status" aria-live="polite"></p>
 
             <label for="gender"><h5>Geschlecht:</h5></label>
-            <select name="gender" id="gender"> 
+            <select name="gender" id="gender" aria-describedby="genderHelp">
                 <option value="none">---</option>
                 <option value="male">Männlich</option>
                 <option value="female">Weiblich</option>
             </select>
+            <p id="genderHelp" class="sr-only">Wähle eine Option, falls du diese Angabe machen möchtest.</p>
+
+            <label for="dateFormat"><h5>Datumsformat:</h5></label>
+            <select name="dateFormat" id="dateFormat" aria-describedby="dateFormatHelp">
+                <option value="YYYY-MM-DD">Kurz</option>
+                <option value="YYYY-MM-DD HH:mm">Lang</option>
+            </select>
+            <p id="dateFormatHelp" class="sr-only">Legt fest, wie Datumsangaben angezeigt werden.</p>
             
             <br><br>
-            <button onclick="toggleDialog()">Schließen</button>
+            <button onclick="toggleDialog()" aria-label="Einstellungen schließen">Schließen</button>
         </dialog>
     </body>
+    <script src="./settings.js" defer></script>
 </html>

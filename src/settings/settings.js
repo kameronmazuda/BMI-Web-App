@@ -1,13 +1,18 @@
 // Saved Settings
 let settings = {
-    gender: 'none'
+    gender: 'none',
+    dateFormat: 'YYYY-MM-DD'
 };
 
 // Load Settings from local storage
 function loadSettingsFromStorage() {
-    const savedSettings = localStorage.getItem('userSettings');
-    if (savedSettings) {
-        settings = JSON.parse(savedSettings);
+    try {
+        const savedSettings = localStorage.getItem('userSettings');
+        if (savedSettings) {
+            settings = JSON.parse(savedSettings);
+        }
+    } catch (e) {
+        console.log("Fehler beim Laden der Einstellungen aus dem LocalStorage:\n" + e)
     }
 }
 
@@ -23,15 +28,29 @@ function toggleDialog() {
 }
 
 function saveSettings() {
-    settings.gender = document.getElementById('gender').value;
-    
-    // Save settings in local storage
-    localStorage.setItem('userSettings', JSON.stringify(settings));
-    console.log('Einstellungen im localStorage gespeichert:', settings);
+    try {
+        settings.gender = document.getElementById('gender').value;
+        settings.dateFormat = document.getElementById('dateFormat').value;
+        
+        // Save settings in local storage
+        localStorage.setItem('userSettings', JSON.stringify(settings));
+        console.log('Einstellungen im localStorage gespeichert:', settings);
+
+        const status = document.getElementById('settingsStatus');
+        if (status) {
+            status.textContent = 'Einstellungen gespeichert.';
+            setTimeout(() => {
+                status.textContent = '';
+            }, 1500);
+        }
+    } catch (e) {
+        console.log("Fehler beim Speichern der Einstellungen im LocalStorage:\n" + e)
+    }
 }
 
 function loadSettings() {
     document.getElementById('gender').value = settings.gender;
+    document.getElementById('dateFormat').value = settings.dateFormat;
 }
 
 // Loads Settings into Dialog
@@ -40,4 +59,5 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     
     document.getElementById('gender').addEventListener('change', saveSettings);
+    document.getElementById('dateFormat').addEventListener('change', saveSettings);
 });
