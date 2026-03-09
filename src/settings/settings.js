@@ -1,7 +1,7 @@
 // Saved Settings
 let settings = {
     gender: 'none',
-    dateFormat: 'ddd MMM DD YYYY'
+    dateFormat: 'YYYY-MM-DD'
 };
 
 // Load Settings from local storage
