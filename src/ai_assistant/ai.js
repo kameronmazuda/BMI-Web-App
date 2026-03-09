@@ -18,6 +18,7 @@ async function generateAIText() {
 
     const { age, date, weight, height, bmi, category } = JSON.parse(savedData);
 
+
     const prompt = `
 Erstelle einen kurzen, sachlichen Fließtext auf Deutsch für eine Schul-Web-App.
 
@@ -31,6 +32,7 @@ BMI-Kategorie: ${category}
 
 Der Text soll neutral und verständlich sein.
 `;
+
 
     try {
         const response = await fetch("http://localhost:1234/v1/chat/completions", {

@@ -1,53 +1,46 @@
-function calculateBMI() {
-  const age = document.getElementById("age")?.value;
-  const date = document.getElementById("date")?.value;
-  const weight = document.getElementById("weight")?.value;
-  const height = document.getElementById("height")?.value;
+/* =========================================================
+   Constants
+========================================================= */
 
-  const validation = validateInput(age, date, weight, height);
-  if (!validation.isValid) {
-    showError(validation.message);
-    return;
-  }
+const STORAGE_KEY = "bmiData";
 
-  const heightInMeters = Number(height) / 100;
-  const bmi = Number(weight) / (heightInMeters * heightInMeters);
-  const bmiRounded = Math.round(bmi * 10) / 10;
+const LIMITS = {
+  age: { min: 1, max: 120 },
+  weight: { min: 1, max: 500 },
+  height: { min: 50, max: 250 },
+};
 
-  const category = getBMICategory(bmiRounded);
+/* =========================================================
+   DOM Helpers
+========================================================= */
 
-  saveToLocalStorage(age, date, weight, height, bmiRounded, category);
-  displayResult(bmiRounded, category);
-  hideError();
+function getInputValue(id) {
+  return document.getElementById(id)?.value.trim();
 }
 
-function validateInput(age, date, weight, height) {
-  if (!age || !date || !weight || !height) {
-    return { isValid: false, message: "Bitte füllen Sie alle Felder aus!" };
-  }
+function setInputValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
 
-  if (Number(age) < 1 || Number(age) > 120) {
-    return {
-      isValid: false,
-      message: "Alter muss zwischen 1 und 120 Jahren liegen!",
-    };
-  }
+function showElement(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = "block";
+}
 
-  if (Number(weight) < 1 || Number(weight) > 500) {
-    return {
-      isValid: false,
-      message: "Gewicht muss zwischen 1 und 500 kg liegen!",
-    };
-  }
+function hideElement(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = "none";
+}
 
-  if (Number(height) < 50 || Number(height) > 250) {
-    return {
-      isValid: false,
-      message: "Größe muss zwischen 50 und 250 cm liegen!",
-    };
-  }
+/* =========================================================
+   Core Logic (Pure Functions)
+========================================================= */
 
-  return { isValid: true };
+function calculateBMIValue(weightKg, heightCm) {
+  const heightM = heightCm / 100;
+  const bmi = weightKg / (heightM * heightM);
+  return Math.round(bmi * 10) / 10;
 }
 
 function getBMICategory(bmi) {
@@ -57,55 +50,131 @@ function getBMICategory(bmi) {
   return "Adipositas";
 }
 
+/* =========================================================
+   Validation
+========================================================= */
+
+function validateRange(value, { min, max }, fieldName) {
+  if (value < min || value > max) {
+    return `${fieldName} muss zwischen ${min} und ${max} liegen!`;
+  }
+  return null;
+}
+
+function validateInputs({ age, date, weight, height }) {
+  if (!age || !date || !weight || !height) {
+    return "Bitte füllen Sie alle Felder aus!";
+  }
+
+  const ageError = validateRange(age, LIMITS.age, "Alter");
+  if (ageError) return ageError;
+
+  const weightError = validateRange(weight, LIMITS.weight, "Gewicht");
+  if (weightError) return weightError;
+
+  const heightError = validateRange(height, LIMITS.height, "Größe");
+  if (heightError) return heightError;
+
+  return null;
+}
+
+/* =========================================================
+   Storage
+========================================================= */
+
+function getStoredBMIData() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+}
+
+function saveBMIData(entry) {
+  const data = getStoredBMIData();
+  data.push(entry);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function getLastBMIEntry() {
+  const data = getStoredBMIData();
+  return data[data.length - 1];
+}
+
+/* =========================================================
+   UI Rendering
+========================================================= */
+
 function displayResult(bmi, category) {
   document.getElementById("bmiValue").textContent = `Ihr BMI: ${bmi}`;
   document.getElementById("bmiCategory").textContent = `Kategorie: ${category}`;
 
   const categoryElement = document.getElementById("bmiCategory");
-  categoryElement.className = category
+  categoryElement.className = normalizeCategoryClass(category);
+
+  showElement("result");
+}
+
+function normalizeCategoryClass(category) {
+  return category
     .toLowerCase()
     .replace("ü", "ue")
     .replace("ö", "oe");
-
-  document.getElementById("result").style.display = "block";
 }
 
-function saveToLocalStorage(age, date, weight, height, bmi, category) {
-  const newdata = {
-    age,
-    date,
-    weight,
-    height,
-    bmi,
-    category,
-    timestamp: new Date().toISOString(),
+function showError(message) {
+  const errorEl = document.getElementById("error");
+  if (!errorEl) return;
+
+  errorEl.textContent = message;
+  showElement("error");
+}
+
+function hideError() {
+  hideElement("error");
+}
+
+/* =========================================================
+   Main Feature
+========================================================= */
+
+function calculateBMI() {
+  const input = {
+    age: Number(getInputValue("age")),
+    date: getInputValue("date"),
+    weight: Number(getInputValue("weight")),
+    height: Number(getInputValue("height")),
   };
 
-  let bmiData = JSON.parse(localStorage.getItem("bmiData") || "[]");
-  bmiData.push(newdata);
-  localStorage.setItem("bmiData", JSON.stringify(bmiData));
-}
+  const validationError = validateInputs(input);
 
-
-function loadFromLocalStorage() {
-  const savedData = localStorage.getItem("bmiData");
-  if (!savedData) {
+  if (validationError) {
+    showError(validationError);
     return;
   }
 
-  const dataArray = JSON.parse(savedData);
-  const data = dataArray[dataArray.length - 1];
+  const bmi = calculateBMIValue(input.weight, input.height);
+  const category = getBMICategory(bmi);
+
+  saveBMIData({
+    ...input,
+    bmi,
+    category,
+    timestamp: new Date().toISOString(),
+  });
+
+  displayResult(bmi, category);
+  hideError();
+}
+
+/* =========================================================
+   Load / Clear
+========================================================= */
+
+function loadFromLocalStorage() {
+  const data = getLastBMIEntry();
   if (!data) return;
 
-  const ageEl = document.getElementById("age");
-  const dateEl = document.getElementById("date");
-  const weightEl = document.getElementById("weight");
-  const heightEl = document.getElementById("height");
-
-  if (ageEl) ageEl.value = data.age || "";
-  if (dateEl) dateEl.value = data.date || "";
-  if (weightEl) weightEl.value = data.weight || "";
-  if (heightEl) heightEl.value = data.height || "";
+  setInputValue("age", data.age);
+  setInputValue("date", data.date);
+  setInputValue("weight", data.weight);
+  setInputValue("height", data.height);
 
   if (data.bmi && data.category) {
     displayResult(data.bmi, data.category);
@@ -113,49 +182,25 @@ function loadFromLocalStorage() {
 }
 
 function clearData() {
-  localStorage.removeItem("bmiData");
+  localStorage.removeItem(STORAGE_KEY);
 
-  const ageEl = document.getElementById("age");
-  const dateEl = document.getElementById("date");
-  const weightEl = document.getElementById("weight");
-  const heightEl = document.getElementById("height");
+  ["age", "date", "weight", "height"].forEach((id) =>
+    setInputValue(id, "")
+  );
 
-  if (ageEl) ageEl.value = "";
-  if (dateEl) dateEl.value = "";
-  if (weightEl) weightEl.value = "";
-  if (heightEl) heightEl.value = "";
-
-  const result = document.getElementById("result");
-  if (result) result.style.display = "none";
-
+  hideElement("result");
   hideError();
 }
 
-function showError(message) {
-  const errorElement = document.getElementById("error");
-  if (!errorElement) return;
+/* =========================================================
+   Initialization
+========================================================= */
 
-  errorElement.textContent = message;
-  errorElement.style.display = "block";
-}
-
-function hideError() {
-  const errorElement = document.getElementById("error");
-  if (!errorElement) return;
-
-  errorElement.style.display = "none";
-}
-
-function initFormular() {
+function initForm() {
   loadFromLocalStorage();
 }
 
-// Make functions global for inline onclick=""
 window.calculateBMI = calculateBMI;
 window.clearData = clearData;
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initFormular);
-} else {
-  initFormular();
-}
+document.addEventListener("DOMContentLoaded", initForm);
