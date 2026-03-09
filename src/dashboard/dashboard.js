@@ -1,195 +1,219 @@
 // src/dashboard/dashboard.js
 
-// Hash route -> view file
-const routes = {
+const ROUTES = {
   dashboard: "./dashboard/dashboard.html",
   formular: "./formular/formular.html",
   tables: "./tables/tables.html",
 };
 
+const DEFAULT_ROUTE = "dashboard";
+const VIEW_ID = "view";
+const SIDEBAR_ID = "sidebarNav";
+
 const loadedScripts = new Set();
 
-function getRouteFromHash() {
-  const raw = (location.hash || "#dashboard").replace("#", "").trim();
-  return routes[raw] ? raw : "dashboard";
+/* =========================================================
+   Routing
+========================================================= */
+
+function getCurrentRoute() {
+  const hash = location.hash.replace("#", "").trim();
+  return ROUTES[hash] ? hash : DEFAULT_ROUTE;
 }
 
-function getBaseDir(filePath) {
-  const i = filePath.lastIndexOf("/");
-  return i >= 0 ? filePath.slice(0, i + 1) : "./";
+function getRouteFile(route) {
+  return ROUTES[route];
 }
 
-function isAbsoluteUrl(url) {
-  return (
-    /^(https?:)?\/\//i.test(url) ||
-    url.startsWith("data:") ||
-    url.startsWith("blob:")
-  );
+/* =========================================================
+   Path Utilities
+========================================================= */
+
+function getBaseDirectory(path) {
+  const index = path.lastIndexOf("/");
+  return index >= 0 ? path.slice(0, index + 1) : "./";
 }
 
-function isRootAbsolute(url) {
+function isExternalUrl(url) {
+  return /^(https?:)?\/\//i.test(url);
+}
+
+function isRootPath(url) {
   return url.startsWith("/");
 }
 
-function isSpecialUrl(url) {
-  return (
-    url.startsWith("#") ||
-    url.startsWith("mailto:") ||
-    url.startsWith("tel:") ||
-    url.startsWith("javascript:")
+function isSpecialProtocol(url) {
+  return ["#", "mailto:", "tel:", "javascript:"].some((prefix) =>
+    url.startsWith(prefix),
   );
 }
 
-function toResolvedPath(url, baseDir) {
-  // baseDir ist z. B. "./dashboard/"
-  // Dokument liegt bei /src/app.html -> daraus wird /src/dashboard/...
+function shouldRewrite(url) {
+  if (!url) return false;
+  if (isExternalUrl(url)) return false;
+  if (isRootPath(url)) return false;
+  if (isSpecialProtocol(url)) return false;
+  if (url.startsWith("data:") || url.startsWith("blob:")) return false;
+  return true;
+}
+
+function resolvePath(url, baseDir) {
   const base = new URL(baseDir, window.location.href);
   const resolved = new URL(url, base);
-
-  // Nur path + query + hash zurückgeben (kein kompletter Origin nötig)
   return `${resolved.pathname}${resolved.search}${resolved.hash}`;
 }
 
-function rewriteRelativeAssets(containerEl, baseDir) {
-  const nodes = containerEl.querySelectorAll(
-    "link[href], script[src], img[src], source[src], iframe[src]",
+/* =========================================================
+   Asset Handling
+========================================================= */
+
+function rewriteRelativeAssets(container, baseDir) {
+  const elements = container.querySelectorAll(
+    "link[href], script[src], img[src], source[src], iframe[src]"
   );
 
-  nodes.forEach((el) => {
-    const attr = el.hasAttribute("href") ? "href" : "src";
-    const val = (el.getAttribute(attr) || "").trim();
+  elements.forEach((element) => {
+    const attribute = element.hasAttribute("href") ? "href" : "src";
+    const value = element.getAttribute(attribute)?.trim();
 
-    if (!val) {
-      return;
-    }
+    if (!shouldRewrite(value)) return;
 
-    // Absolute / Root / Sonderfälle nicht anfassen
-    if (isAbsoluteUrl(val) || isRootAbsolute(val) || isSpecialUrl(val)) {
-      return;
-    }
-
-    // ALLE relativen Pfade auflösen (nicht nur "./...")
-    const newVal = toResolvedPath(val, baseDir);
-    el.setAttribute(attr, newVal);
+    element.setAttribute(attribute, resolvePath(value, baseDir));
   });
 }
 
-function runInlineScripts(containerEl) {
-  // Inline <script> inside innerHTML is NOT executed automatically.
-  const scripts = Array.from(containerEl.querySelectorAll("script")).filter(
-    (s) => !s.src,
-  );
+/* =========================================================
+   Script Execution
+========================================================= */
+
+function executeInlineScripts(container) {
+  const scripts = [...container.querySelectorAll("script:not([src])")];
 
   scripts.forEach((oldScript) => {
     const newScript = document.createElement("script");
-
-    if (oldScript.type) {
-      newScript.type = oldScript.type;
-    }
-
+    newScript.type = oldScript.type || "text/javascript";
     newScript.textContent = oldScript.textContent || "";
     oldScript.replaceWith(newScript);
   });
 }
 
-function runExternalScripts(containerEl) {
-  const scripts = Array.from(containerEl.querySelectorAll("script[src]"));
-
-  const loaders = scripts.map((oldScript) => {
-    const src = (oldScript.getAttribute("src") || "").trim();
-
-    if (!src) {
-      return Promise.resolve();
-    }
-
-    // Schon geladen -> nicht nochmal laden
-    if (loadedScripts.has(src)) {
-      return Promise.resolve();
-    }
-
-    loadedScripts.add(src);
-
-    return new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = src;
-      s.defer = true;
-
-      if (oldScript.type) {
-        s.type = oldScript.type;
-      }
-
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-
-      document.body.appendChild(s);
-    });
-  });
-
-  return Promise.all(loaders);
-}
-
-async function loadRoute(routeName) {
-  console.log("Loading route:", routeName);
-
-  const host = document.getElementById("view");
-  const file = routes[routeName];
-
-  if (!host) {
-    console.error('Container with id="view" not found.');
-    return;
+function loadExternalScript(src, type) {
+  if (!src || loadedScripts.has(src)) {
+    return Promise.resolve();
   }
 
-  console.log("Fetching view file:", file);
+  loadedScripts.add(src);
 
-  const res = await fetch(file, { cache: "no-store" });
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.defer = true;
+    if (type) script.type = type;
 
-  if (!res.ok) {
-    host.innerHTML = `<div class="alert alert-danger mb-0">
-      Could not load <b>${file}</b> (HTTP ${res.status})
-    </div>`;
-    console.error("Fetch failed:", res.status, res.statusText);
-    return;
-  }
+    script.onload = resolve;
+    script.onerror = () =>
+      reject(new Error(`Failed to load script: ${src}`));
 
-  host.innerHTML = await res.text();
-  console.log("View injected into #view");
-
-  const baseDir = getBaseDir(file);
-
-  // WICHTIG: relative Pfade im geladenen Partial korrigieren
-  rewriteRelativeAssets(host, baseDir);
-
-  // Scripts aus dynamisch geladenem HTML ausführen
-  runInlineScripts(host);
-  await runExternalScripts(host);
-
-  if (routeName === "tables") {
-    window.tablesInit?.();
-  }
-
-  // Sidebar active state
-  document.querySelectorAll("#sidebarNav .nav-link").forEach((a) => {
-    a.classList.toggle("active", a.dataset.page === routeName);
+    document.body.appendChild(script);
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("dashboard.js loaded");
+function executeExternalScripts(container) {
+  const scripts = [...container.querySelectorAll("script[src]")];
 
-  loadRoute(getRouteFromHash());
+  return Promise.all(
+    scripts.map((script) =>
+      loadExternalScript(
+        script.getAttribute("src")?.trim(),
+        script.type
+      )
+    )
+  );
+}
+
+/* =========================================================
+   View Rendering
+========================================================= */
+
+async function fetchView(file) {
+  const response = await fetch(file, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load ${file} (HTTP ${response.status})`);
+  }
+
+  return response.text();
+}
+
+function renderError(container, message) {
+  container.innerHTML = `
+    <div class="alert alert-danger mb-0">
+      ${message}
+    </div>
+  `;
+}
+
+function updateSidebar(route) {
+  document
+    .querySelectorAll(`#${SIDEBAR_ID} .nav-link`)
+    .forEach((link) =>
+      link.classList.toggle("active", link.dataset.page === route)
+    );
+}
+
+/* =========================================================
+   Main Route Loader
+========================================================= */
+
+async function loadRoute(route) {
+  const container = document.getElementById(VIEW_ID);
+  if (!container) return;
+
+  const file = getRouteFile(route);
+
+  try {
+    const html = await fetchView(file);
+    container.innerHTML = html;
+
+    const baseDir = getBaseDirectory(file);
+
+    rewriteRelativeAssets(container, baseDir);
+    executeInlineScripts(container);
+    await executeExternalScripts(container);
+
+    if (route === "tables") {
+      window.tablesInit?.();
+    }
+
+    updateSidebar(route);
+  } catch (error) {
+    renderError(container, error.message);
+    console.error(error);
+  }
+}
+
+/* =========================================================
+   Initialization
+========================================================= */
+
+function initRouting() {
+  loadRoute(getCurrentRoute());
 
   window.addEventListener("hashchange", () => {
-    loadRoute(getRouteFromHash());
+    loadRoute(getCurrentRoute());
   });
 
-  document.getElementById("sidebarNav")?.addEventListener("click", (e) => {
-    const link = e.target.closest("a[data-page]");
+  document
+    .getElementById(SIDEBAR_ID)
+    ?.addEventListener("click", handleSidebarClick);
+}
 
-    if (!link) {
-      return;
-    }
+function handleSidebarClick(event) {
+  const link = event.target.closest("a[data-page]");
+  if (!link) return;
 
-    e.preventDefault();
-    location.hash = link.dataset.page;
-  });
-});
+  event.preventDefault();
+  location.hash = link.dataset.page;
+}
+
+document.addEventListener("DOMContentLoaded", initRouting);

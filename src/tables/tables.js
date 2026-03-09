@@ -1,110 +1,195 @@
 // src/tables/tables.js
 (() => {
-  // Prevent double-execution (router + iframe + route switches)
-  if (window.__tablesLoaded) {
-    // Still expose init in case router wants to call it again
-    if (typeof window.tablesInit === "function") {
-      return;
-    }
-  }
+  if (window.__tablesLoaded) return;
   window.__tablesLoaded = true;
 
-  const STORAGE_KEY = "bmiData";
-  let bmiList = [];
+  /* =========================================================
+     Constants
+  ========================================================= */
 
-  function calculateBMI(weight, height) {
+  const STORAGE_KEY = "bmiData";
+  const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+  /* =========================================================
+     State
+  ========================================================= */
+
+  let bmiEntries = [];
+
+  /* =========================================================
+     Pure Utilities
+  ========================================================= */
+
+  function calculateBMI(weight, heightCm) {
     const w = Number(weight);
-    const hCm = Number(height);
-    if (!Number.isFinite(w) || !Number.isFinite(hCm) || hCm <= 0) {
+    const h = Number(heightCm);
+
+    if (!Number.isFinite(w) || !Number.isFinite(h) || h <= 0) {
       return null;
     }
-    const h = hCm / 100;
-    return Number((w / (h * h)).toFixed(1));
+
+    const heightM = h / 100;
+    return Number((w / (heightM * heightM)).toFixed(1));
   }
 
-  function bmiRating(bmi) {
-    const v = Number(bmi);
-    if (!Number.isFinite(v)) return "—";
-    if (v < 18.5) return "Untergewicht";
-    if (v < 25) return "Normalgewicht";
-    if (v < 30) return "Übergewicht";
+  function getBMICategory(bmi) {
+    if (!Number.isFinite(bmi)) return "—";
+    if (bmi < 18.5) return "Untergewicht";
+    if (bmi < 25) return "Normalgewicht";
+    if (bmi < 30) return "Übergewicht";
     return "Adipositas";
   }
 
+  function isWithinDays(dateString, days) {
+    const entryDate = new Date(dateString);
+    if (Number.isNaN(entryDate.getTime())) return false;
+
+    const diff = Date.now() - entryDate.getTime();
+    return diff <= days * DAY_IN_MS;
+  }
+
+  /* =========================================================
+     Storage
+  ========================================================= */
+
   function loadFromStorage() {
-    const data = localStorage.getItem(STORAGE_KEY);
     try {
-      return data ? JSON.parse(data) : [];
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     } catch {
       return [];
     }
   }
 
   function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bmiList));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bmiEntries));
   }
 
-  function buildTable(filterSelect, sortSelect, tableBody) {
-    let list = [...bmiList];
-    const now = new Date();
+  function removeEntryByTimestamp(timestamp) {
+    bmiEntries = bmiEntries.filter((e) => e.timestamp !== timestamp);
+    saveToStorage();
+  }
 
-    if (filterSelect.value !== "all") {
-      list = list.filter((entry) => {
-        const entryDate = new Date(entry.date);
-        const diffDays = (now - entryDate) / (1000 * 60 * 60 * 24);
-        if (filterSelect.value === "week") return diffDays <= 7;
-        if (filterSelect.value === "month") return diffDays <= 30;
-        return true;
-      });
+  /* =========================================================
+     Filtering & Sorting
+  ========================================================= */
+
+  function filterEntries(entries, filterValue) {
+    if (filterValue === "week") {
+      return entries.filter((e) => isWithinDays(e.date, 7));
     }
 
-    switch (sortSelect.value) {
+    if (filterValue === "month") {
+      return entries.filter((e) => isWithinDays(e.date, 30));
+    }
+
+    return entries;
+  }
+
+  function sortEntries(entries, sortValue) {
+    const list = [...entries];
+
+    switch (sortValue) {
       case "date-asc":
-        list.sort((a, b) => new Date(a.date) - new Date(b.date));
-        break;
+        return list.sort((a, b) => new Date(a.date) - new Date(b.date));
+
       case "date-desc":
-        list.sort((a, b) => new Date(b.date) - new Date(a.date));
-        break;
+        return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+
       case "bmi-asc":
-        list.sort((a, b) => {
-          const aBmi = calculateBMI(a.weight, a.height) ?? 1e15;
-          const bBmi = calculateBMI(b.weight, b.height) ?? 1e15;
-          return aBmi - bBmi;
-        });
-        break;
+        return list.sort(
+          (a, b) =>
+            (calculateBMI(a.weight, a.height) ?? Infinity) -
+            (calculateBMI(b.weight, b.height) ?? Infinity),
+        );
+
       case "bmi-desc":
-        list.sort((a, b) => {
-          const aBmi = calculateBMI(a.weight, a.height) ?? -1e15;
-          const bBmi = calculateBMI(b.weight, b.height) ?? -1e15;
-          return bBmi - aBmi;
-        });
-        break;
+        return list.sort(
+          (a, b) =>
+            (calculateBMI(b.weight, b.height) ?? -Infinity) -
+            (calculateBMI(a.weight, a.height) ?? -Infinity),
+        );
+
+      default:
+        return list;
+    }
+  }
+
+  /* =========================================================
+     Rendering
+  ========================================================= */
+
+  function createRow(entry) {
+    const bmi = calculateBMI(entry.weight, entry.height);
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${entry.date ?? "—"}</td>
+      <td>${entry.weight ?? "—"}</td>
+      <td>${entry.height ?? "—"}</td>
+      <td>${bmi ?? "—"}</td>
+      <td>${getBMICategory(bmi)}</td>
+      <td>
+        <button 
+          class="btn btn-sm btn-danger" 
+          data-timestamp="${entry.timestamp}">
+          Löschen
+        </button>
+      </td>
+    `;
+
+    return tr;
+  }
+
+  function renderTable(entries, tableBody) {
+    tableBody.innerHTML = "";
+    entries.forEach((entry) =>
+      tableBody.appendChild(createRow(entry)),
+    );
+  }
+
+  /* =========================================================
+     Controller
+  ========================================================= */
+
+  function rebuildTable(filterSelect, sortSelect, tableBody) {
+    const filtered = filterEntries(bmiEntries, filterSelect.value);
+    const sorted = sortEntries(filtered, sortSelect.value);
+    renderTable(sorted, tableBody);
+  }
+
+  function bindControls(filterSelect, sortSelect, tableBody) {
+    if (!filterSelect.dataset.bound) {
+      filterSelect.addEventListener("change", () =>
+        rebuildTable(filterSelect, sortSelect, tableBody),
+      );
+      filterSelect.dataset.bound = "1";
     }
 
-    tableBody.innerHTML = "";
+    if (!sortSelect.dataset.bound) {
+      sortSelect.addEventListener("change", () =>
+        rebuildTable(filterSelect, sortSelect, tableBody),
+      );
+      sortSelect.dataset.bound = "1";
+    }
 
-    list.forEach((entry, index) => {
-      const bmi = calculateBMI(entry.weight, entry.height);
+    // Event delegation for delete buttons
+    if (!tableBody.dataset.bound) {
+      tableBody.addEventListener("click", (event) => {
+        const btn = event.target.closest("button[data-timestamp]");
+        if (!btn) return;
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${entry.date ?? "—"}</td>
-        <td>${entry.weight ?? "—"}</td>
-        <td>${entry.height ?? "—"}</td>
-        <td>${bmi ?? "—"}</td>
-        <td>${bmiRating(bmi)}</td>
-        <td><button class="btn btn-sm btn-danger" data-index="${index}">Löschen</button></td>
-      `;
-
-      tr.querySelector("button")?.addEventListener("click", () => {
-        bmiList.splice(index, 1);
-        saveToStorage(); // neu speichern
-        buildTable(filterSelect, sortSelect, tableBody);
+        removeEntryByTimestamp(btn.dataset.timestamp);
+        rebuildTable(filterSelect, sortSelect, tableBody);
       });
 
-      tableBody.appendChild(tr);
-    });
+      tableBody.dataset.bound = "1";
+    }
   }
+
+  /* =========================================================
+     Initialization
+  ========================================================= */
 
   function tablesInit() {
     const filterSelect = document.getElementById("filterSelect");
@@ -112,39 +197,17 @@
     const tableBody = document.getElementById("bmiTableBody");
 
     if (!filterSelect || !sortSelect || !tableBody) {
-      // view not present (yet)
-      return;
+      return; // View not loaded yet
     }
 
-    // Bind listeners only once per DOM element
-    if (!filterSelect.dataset.bound) {
-      filterSelect.addEventListener("change", () =>
-        buildTable(filterSelect, sortSelect, tableBody),
-      );
-      filterSelect.dataset.bound = "1";
-    }
+    bmiEntries = loadFromStorage();
 
-    if (!sortSelect.dataset.bound) {
-      sortSelect.addEventListener("change", () =>
-        buildTable(filterSelect, sortSelect, tableBody),
-      );
-      sortSelect.dataset.bound = "1";
-    }
-
-    // Prefer stable root path if you serve /src as web root:
-    // fetch("/data/mock.json")
-    // Otherwise keep script-relative:
-    // const jsonUrl = resolveUrl("../data/mock.json");
-
-    // Daten jetzt aus LocalStorage laden statt aus mock.json
-    bmiList = loadFromStorage();
-    buildTable(filterSelect, sortSelect, tableBody);
+    bindControls(filterSelect, sortSelect, tableBody);
+    rebuildTable(filterSelect, sortSelect, tableBody);
   }
 
-  // Export global, so the router can call it after injecting the view
   window.tablesInit = tablesInit;
 
-  // If tables.html is opened directly or inside an iframe, init normally
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", tablesInit);
   } else {
