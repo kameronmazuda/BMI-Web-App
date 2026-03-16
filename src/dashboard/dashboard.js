@@ -1,17 +1,9 @@
 // src/dashboard/dashboard.js
-
-<<<<<<< Updated upstream
-const ROUTES = {
-  dashboard: "./dashboard/dashboard.html",
-  formular: "./formular/formular.html",
-  tables: "./tables/tables.html",
-=======
 // Hash route -> view file
 const routes = {
   dashboard: "./src/dashboard/dashboard.html",
   formular: "./src/formular/formular.html",
   tables: "./src/tables/tables.html",
->>>>>>> Stashed changes
 };
 
 const DEFAULT_ROUTE = "dashboard";
