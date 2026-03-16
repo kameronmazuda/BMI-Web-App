@@ -1,31 +1,36 @@
-<div>
-    <div class="col-12">
-        <div class="box page-title" style="background-color: var(--color-primary);">BMI Formular</div>
-    </div>
-    <div class="col-12">
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="./formular.css" />
-        <script src="./formular.js" defer></script>
-    </div>
-    <div class="col-12">
-        <form id="bmiForm">
-            <input type="number" id="age" name="Age" placeholder="Age (Years)" required min="1" max="120" />
-            <input type="date" id="date" name="date" placeholder="Birthday" required />
-            <input type="number" id="weight" name="weight" placeholder="Weight in Kg" required min="1" max="500" />
-            <input type="number" id="height" name="height" placeholder="Height in cm" required min="50" max="250" />
+<h1>BMI Formular</h1>
 
-            <button type="button" onclick="calculateBMI()">BMI berechnen</button>
-            <button type="button" onclick="clearData()" style="margin-top: 10px; background-color: #f44336;">
-                Clear/Reset
-            </button>
-        </form>
+<form id="bmiForm">
+  <input type="number" id="age" placeholder="Age (Years)" required min="1" max="120">
+  <input type="date" id="date" required>
+  <input type="number" id="weight" placeholder="Weight in Kg" required min="1" max="500">
+  <input type="number" id="height" placeholder="Height in cm" required min="50" max="250">
 
-        <div id="result" style="display: none;">
-            <h2>Ihr BMI Ergebnis</h2>
-            <p id="bmiValue"></p>
-            <p id="bmiCategory"></p>
-        </div>
+  <button type="button" onclick="calculateBMI()">BMI berechnen</button>
+  <button type="button" onclick="clearData()" style="margin-top:10px;background-color:#f44336;">
+    Clear / Reset
+  </button>
+</form>
 
-        <div id="error"></div>
-    </div>
+<div id="result" style="display:none;">
+  <h2>Ihr BMI Ergebnis</h2>
+  <p id="bmiValue"></p>
+  <p id="bmiCategory"></p>
 </div>
+
+<!-- Toast container -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+  <div id="errorToast" class="toast text-bg-danger border-0" role="alert">
+    <div class="d-flex">
+      <div id="errorToastBody" class="toast-body"></div>
+
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast">
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="./formular.js"></script>

@@ -1,10 +1,8 @@
-// src/dashboard/dashboard.js
-// Hash route -> view file
-const routes = {
-  dashboard: "./src/dashboard/dashboard.html",
-  formular: "./src/formular/formular.html",
-  tables: "./src/tables/tables.html",
-};
+const ROUTES = {
+  dashboard: "./dashboard/dashboard.html",
+  formular: "./formular/formular.html",
+  tables: "./tables/tables.html",
+}
 
 const DEFAULT_ROUTE = "dashboard";
 const VIEW_ID = "view";
