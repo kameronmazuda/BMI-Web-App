@@ -1,73 +1,141 @@
-/* Base */
+/* =========================
+   Base
+   ========================= */
 html,
 body {
   height: 100%;
 }
 
 body {
-  background: #fdfdfd;
+  background: var(--bg-page);
+  color: var(--text-main);
+  font-family: Arial, sans-serif;
 }
 
-/* Layout helpers */
-.box {
-  background: #fff;
-  border: 2px solid #333;
+/* Better outer spacing */
+.container-fluid {
+  padding: var(--space-5);
 }
 
-.box-chart {
-  background: #fff;
-  border: 2px solid #333;
-  height: 600px;
-}
-
-.page-title {
-  padding: 10px 14px;
-  text-align: center;
-  font-weight: 600;
-}
-
-.box-header {
-  border-bottom: 2px solid #333;
-  padding: 8px 12px;
-  text-align: center;
-  font-weight: 600;
-}
-
-/* Sidebar */
+/* =========================
+   Shared card look
+   ========================= */
+.box,
+.box-chart,
 .sidebar {
-  background: #fff;
-  border: 2px solid #333;
-  min-height: calc(100vh - 2rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+}
+
+/* =========================
+   Sidebar
+   ========================= */
+.sidebar {
+  min-height: calc(100vh - 48px);
+  overflow: hidden;
+  position: sticky;
+  top: 24px;
 }
 
 .sidebar-title {
-  border-bottom: 2px solid #333;
-  font-weight: 600;
+  padding: 18px 20px;
+  font-size: 1rem;
+  font-weight: 700;
   text-align: center;
-  padding: 10px;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
 }
 
 .sidebar .nav-link {
-  color: #000 !important;
+  color: var(--text-soft) !important;
   text-decoration: none;
-  padding: 14px 16px;
+  padding: 16px 18px;
   text-align: center;
-  border-bottom: 1px solid #333;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-soft);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar .nav-link:hover {
+  background: var(--surface-2);
+  color: var(--text-main) !important;
 }
 
 .sidebar .nav-link.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark) !important;
   font-weight: 700;
-  background: #f2f2f2;
 }
 
-/* Placeholders */
+/* =========================
+   Dashboard sections
+   ========================= */
+.page-title,
+.box-header {
+  padding: 18px 22px;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border);
+  background: var(--color-surface-light);
+  border: 1px solid var(--color-primary);
+}
+
+.box {
+  overflow: hidden;
+}
+
+.box-chart {
+  padding: var(--space-4);
+  min-height: 510px;
+}
+
+.embed-title {
+  margin-bottom: 14px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.embed-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* iframes */
+.dash-frame,
+.table-frame {
+  width: 100%;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-light);
+}
+
+.dash-frame {
+  height: 420px;
+}
+
+.table-frame {
+  height: 470px;
+}
+
+/* legacy placeholders if still used anywhere */
 .ph {
-  background: #f1f1f1;
-  border: 2px solid #999;
+  background: var(--bg-soft);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
   display: grid;
   place-items: center;
-  color: #333;
-  font-weight: 600;
+  color: var(--text-soft);
+  font-weight: 700;
   user-select: none;
 }
 
@@ -83,32 +151,13 @@ body {
   height: 936px;
 }
 
-/* Embedded pages (iframes) */
-.embed-title {
+/* Optional fallback text inside dashboard */
+.embed-fallback {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #f4edcf;
+  color: #7b6d18;
   font-weight: 600;
-  margin-bottom: 10px;
   text-align: center;
-}
-
-.embed-box {
-  border: 2px solid #999;
-  background: #f9f9f9;
-  height: 320px; /* Controls visible height of embedded page */
-}
-
-.embed-frame {
-  width: 100%;
-  height: 100%;
-  border: 0; /* No iframe border */
-  display: block;
-}
-
-.dash-frame {
-  height: 540px;
-  width: 100%;
-}
-
-.table-frame {
-  height: 520px;
-  width: 100%;
 }

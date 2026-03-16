@@ -1,0 +1,38 @@
+/* =========================
+   Corporate Design 
+   ========================= */
+:root {
+  --color-primary: #5fa8a8;
+  --color-primary-dark: #4c8e8e;
+  --color-primary-light: #e5f1f1;
+
+  --color-accent: #84b89a;
+  --color-accent-light: #e7f1ea;
+
+  --color-bg: #f5f8f7;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f0f5f4;
+  --color-border: #d8e3e0;
+
+  --color-text: #243238;
+  --color-text-soft: #66767d;
+
+  --color-success: #72a97d;
+  --color-warning: #d5b65c;
+  --color-danger: #c97373;
+
+  --shadow-soft: 0 12px 32px rgba(36, 50, 56, 0.08);
+  --shadow-sm: 0 6px 18px rgba(36, 50, 56, 0.06);
+
+  --radius-xl: 22px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 20px;
+  --space-5: 24px;
+  --space-6: 32px;
+}
