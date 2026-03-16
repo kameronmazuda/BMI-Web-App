@@ -56,8 +56,8 @@
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     } catch {
-      return [];
-    }
+      showErrorToast("Fehler beim Laden der gespeicherten Daten.");
+    return [];    }
   }
 
   function saveToStorage() {
@@ -213,4 +213,20 @@
   } else {
     tablesInit();
   }
+
+    /* =========================================================
+     Toast
+  ========================================================= */
+
+  function showErrorToast(message) {
+  const toastEl = document.getElementById("errorToast");
+  const toastBody = document.getElementById("errorToastBody");
+
+  if (!toastEl || !toastBody) return;
+
+  toastBody.textContent = message;
+
+  const toast = new bootstrap.Toast(toastEl);
+  toast.show();
+}
 })();
