@@ -8,7 +8,10 @@ body {
   background: #fdfdfd;
 }
 
-/* Layout helpers */
+body {
+  background: #000; 
+}
+
 .box {
   background: #fff;
   border: 2px solid #333;
@@ -18,6 +21,10 @@ body {
   background: #fff;
   border: 2px solid #333;
   height: 600px;
+}
+
+.box-chart {
+  height: 400px; 
 }
 
 .page-title {
@@ -60,7 +67,6 @@ body {
   background: #f2f2f2;
 }
 
-/* Placeholders */
 .ph {
   background: #f1f1f1;
   border: 2px solid #999;
@@ -83,7 +89,6 @@ body {
   height: 936px;
 }
 
-/* Embedded pages (iframes) */
 .embed-title {
   font-weight: 600;
   margin-bottom: 10px;
@@ -93,13 +98,13 @@ body {
 .embed-box {
   border: 2px solid #999;
   background: #f9f9f9;
-  height: 320px; /* Controls visible height of embedded page */
+  height: 320px; /
 }
 
 .embed-frame {
   width: 100%;
   height: 100%;
-  border: 0; /* No iframe border */
+  border: 0; /* 
   display: block;
 }
 

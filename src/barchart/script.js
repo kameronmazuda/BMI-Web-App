@@ -1,7 +1,7 @@
 const ctx = document.getElementById("bmiChart");
 const bmiData = JSON.parse(localStorage.getItem("bmiData")) || [];
 
-function getBMIColor(bmi) {
+function getBMIColour(bmi) {
   if (bmi < 18.5) return "#74c0fc"; // Underweight
   if (bmi < 25) return "#51cf66"; // Normal
   if (bmi < 30) return "#ffa94d"; // Overweight
@@ -42,5 +42,20 @@ const bmiChart = new Chart(ctx, {
         },
       },
     },
+  },
+});
+
+const duplicateChart = new Chart(ctx, {
+  type: "bar",
+  data: {
+    labels: bmiData?.map((e) => e.timestamp),
+    datasets: [
+      {
+        label: "BMI Duplicate",
+        data: bmiData.map((e) => e.bmi),
+        backgroundColor: bmiData.map((e) => getBMIColour(e.bmi)),
+        borderRadius: 6,
+      },
+    ],
   },
 });

@@ -1,4 +1,4 @@
-<!-- src/dashboard/dashboard.html -->
+<!-- 
 
 <div class="row g-3">
     <div class="col-12">
@@ -9,7 +9,6 @@
         <div class="box-chart p-3">
             <div class="embed-title">Bar Chart</div>
 
-            <!-- IMPORTANT: barchart/ is in src/, not in dashboard/ -->
             <iframe id="dashBarFrame" class="dash-frame" src="../barchart/barchart.html" title="Bar chart"
                 loading="lazy"></iframe>
         </div>
@@ -20,7 +19,6 @@
             <div class="embed-title">Line Chart</div>
 
             <div class="embed-box embed-box--small">
-                <!-- IMPORTANT: line_chart/ is in src/, not in dashboard/ -->
                 <iframe id="dashLineFrame" class="dash-frame" src="../line_chart/line_chart.html" title="Line chart"
                     loading="lazy"></iframe>
 
@@ -31,12 +29,28 @@
         </div>
     </div>
 
+    <div class="col-12 col-lg-6">
+        <div class="box-chart p-3">
+            <div class="embed-title">Bar Chart Duplicate</div>
+            <iframe id="dashBarFrame2" class="dash-frame" src="../barchart/barchart.html" title="Bar chart duplicate"
+                loading="lazy"></iframe>
+        </div>
+    </div>
+
     <div class="col-12">
         <div class="box">
             <div class="box-header">Tables</div>
 
             <!-- IMPORTANT: tables/ is in src/, not in dashboard/ -->
             <iframe class="table-frame" id="tableFrame" src="../tables/tables.html" title="Tables"
+                loading="lazy"></iframe>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="box">
+            <div class="box-header">Tables Copy</div>
+            <iframe class="table-frame" id="tableFrame2" src="../tables/tables.html" title="Tables copy"
                 loading="lazy"></iframe>
         </div>
     </div>

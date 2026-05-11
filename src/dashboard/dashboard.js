@@ -12,6 +12,12 @@ const SIDEBAR_ID = "sidebarNav";
 
 const loadedScripts = new Set();
 
+const routes = {
+  dashboard: "./dashboard/dashboard.html",
+  formular: "./formular/formular.html",
+  tables: "./tables/tables.html",
+};
+
 /* =========================================================
    Routing
 ========================================================= */
@@ -23,6 +29,12 @@ function getCurrentRoute() {
 
 function getRouteFile(route) {
   return ROUTES[route];
+}
+
+// Duplicate function with slight change
+function getCurrentRouteDuplicate() {
+  const hash = location.hash.replace("#", "").trim();
+  return routes[hash] ? hash : DEFAULT_ROUTE; // uses routes instead of ROUTES
 }
 
 /* =========================================================
